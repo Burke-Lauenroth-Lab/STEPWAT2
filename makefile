@@ -47,9 +47,10 @@ sources_core = \
 	sxw_resource.c \
 	sxw_soilwat.c \
 	sxw_sql.c \
-	ST_initialization.c \
+	ST_spinup.c \
 	ST_progressBar.c \
-	ST_seedDispersal.c
+	ST_seedDispersal.c \
+	ST_colonization.c
 
 sources_test = \
 	$(path_sw2)/googletest/googletest/src/gtest-all.cc \

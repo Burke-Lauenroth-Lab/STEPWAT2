@@ -35,7 +35,10 @@
  *         28 2002 has been entirely deprecated. I removed the last reference
  *         to SXW_BYMAXSIZE and _Grp_BMass today.
  * 
- * \ingroup SXW
+ * \author CWB (initial coding)
+ * \author Chandler Haukap
+ * \date 9 May 2002 (initial coding)
+ * \ingroup SXW_PRIVATE
  */
 
 /* =================================================== */
@@ -133,7 +136,7 @@ void copy_sxw_variables(SXW_t* newSXW, SXW_resourceType* newSXWResources, transp
 /****************** Begin Function Code ********************/
 
 /**
- * \brief Read \ref SOILWAT2 input files and initialize variables.
+ * \brief Read [SOILWAT2](\ref sw_src) input files and initialize variables.
  * 
  * \ingroup SXW
  */

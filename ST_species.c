@@ -14,9 +14,7 @@
  *     Chris Bennett\n
  *     Chandler Haukap\n
  *     Freddy Pierson
- * 
  * \date 22 August 2019
- * 
  * \ingroup SPECIES
  */
 
@@ -27,8 +25,7 @@
 #include "sw_src/filefuncs.h"
 #include "sw_src/myMemory.h"
 #include "sw_src/rands.h"
-#include "sw_src/pcg/pcg_basic.h"
-#include "ST_initialization.h"
+#include "ST_spinup.h"
 #include "ST_seedDispersal.h"
 
 extern
@@ -73,43 +70,47 @@ static SpeciesType *_create(void);
  * seedlings that will establish this year based on the maximum number of 
  * seedlings that can establish in any year.
  * 
- * Initial programming by Chris Bennett @ LTER-CSU 6/15/2000.
+ * Initial programming by Chris Bennett @ LTER-CSU 6/15/2000. 
+ * Overhauled by Chandler Haukap.
  * 
  * \param sp the index in \ref Species of the species to establish
  * 
  * \return A number of seedlings between 0 and \ref Species[sp]->max_seed_estab
  * 
+ * \author Chandler Haukap
+ * \date 19 December 2019
  * \ingroup SPECIES
  */
 IntS Species_NumEstablish(SppIndex sp)
 {
-	//special conditions if we're using the grid and seed dispersal options (as long as its not during the spinup, because we dont use seed dispersal during spinup)
-	if (UseGrid && UseSeedDispersal && !DuringInitialization) {
-		if (Species[sp]->sd_sgerm)
-		{
-			if (Species[sp]->max_seed_estab <= 1) {
-				return 1;
-			} else {
-				return (IntS) RandUniIntRange(1, Species[sp]->max_seed_estab, &species_rng);
-			}
-		} else {
-			return 0;
-		}
-	}
+    // If we are using seed dispersal
+    if(UseSeedDispersal && Species[sp]->use_dispersal){
+        if(Species[sp]->seedsPresent && 
+           RandUni(&species_rng) <= Species[sp]->seedling_estab_prob){
+			// printf("** %s used dispersal **\n", Species[sp]->name);
+            return (IntS) RandUniIntRange(1, Species[sp]->max_seed_estab, 
+										  &species_rng);
+        } else {
+			// printf("%s tried dispersal but was unsuccessfull\n", Species[sp]->name);
+            return 0;
+        }
+    }
 
-	//float biomass = Species[sp]->relsize * Species[sp]->mature_biomass; //This line does nothing!
-	if (RGroup[Species[sp]->res_grp]->est_annually
-			|| LE(RandUni(&species_rng), Species[sp]->seedling_estab_prob)
-			|| (Species[sp]->sd_sgerm)) {
-		if (Species[sp]->max_seed_estab <= 1) {
-			return 1;
-		} else {
-			return (IntS) RandUniIntRange(1, Species[sp]->max_seed_estab, &species_rng);
-		    //return Species[sp]->max_seed_estab;
-		}
-	} else {
-		return 0;
-	}
+    // If we are forcing this species to establish every year
+    if(RGroup[Species[sp]->res_grp]->est_annually){
+		// printf("%s forced establishment\n", Species[sp]->name);
+        return (IntS) RandUniIntRange(1, Species[sp]->max_seed_estab, &species_rng);
+    }
+
+    // Otherwise, run normal establishment
+    if(RandUni(&species_rng) <= Species[sp]->seedling_estab_prob){
+		// printf("%s used traditional establishment\n", Species[sp]->name);
+        return (IntS) RandUniIntRange(1, Species[sp]->max_seed_estab, &species_rng);
+    }
+
+    // If we didn't get caught by any of the three "if" statements above then
+    // This species will not establish.
+    return 0;
 }
 
 /**
@@ -249,6 +250,42 @@ RealF getSpeciesRelsize(SppIndex sp)
 }
 
 /**
+ * \brief Get the height of the tallest individual of this species.
+ * 
+ * \param sp A pointer to the \ref SpeciesType.
+ * 
+ * \return A float. The height of the tallest individual of the species in 
+ *         centimeters.
+ * 
+ * \author Chandler Haukap
+ * 
+ * \ingroup SPECIES
+ */
+RealF getSpeciesHeight(SpeciesType* sp)
+{
+    IndivType* indiv;
+    RealF maxrelsize = 0;
+
+    // If there are no individuals established.
+    if(sp->est_count < 1){
+        return 0;
+    }
+    
+    // Find the biggest individual.
+    ForEachIndiv(indiv, sp){
+        if(indiv->relsize > maxrelsize){
+            maxrelsize = indiv->relsize;
+        }
+    }
+
+	printf("within getSpeciesHeight maxrelsize = %f, Species mature_biomass = %f, maxHeight= %f, heightSlope= %f\n ", maxrelsize, sp->mature_biomass, sp->maxHeight, sp->heightSlope);
+
+    // (maxrelsize * sp->mature_biomass) is the biomass of the individual.
+    return sp->maxHeight * (1 - exp(
+        -(sp->heightSlope * maxrelsize * sp->mature_biomass)));
+}
+
+/**
  * \brief Create a new species and integrate it into \ref Species.
  * 
  * Initial programming by Chris Bennett @ LTER-CSU 6/15/2000.
@@ -279,12 +316,31 @@ SppIndex species_New(void)
 	return i;
 }
 
-/* Copy one Species' information to another Species. Note that both Species MUST be allocated. */
+/**
+ * \brief Copy one species to another species.
+ * 
+ * Copies every field of the source \ref SpeciesType struct to the destination
+ * \ref SpeciesType struct. This function also deallocates the destination's
+ * \ref IndivType linked list then allocates a new \ref IndivType linked list.
+ * 
+ * \param src Is a pointer to the \ref SpeciesType struct to copy information 
+ *            FROM.
+ * \param dest Is a pointer to the \ref SpeciesType struct to copy information
+ *             TO.
+ * 
+ * \sideeffect 
+ *     The \ref IndivType linked list of the destination will be reallocated to
+ *     the size of the source. And, of course, all fields of the destination 
+ *     will be overwritten.
+ * 
+ * \ingroup SPECIES
+ */
 void copy_species(const SpeciesType* src, SpeciesType* dest){
 	int i;
 	IndivType *srcIndv, *destIndv, *next;
 
-	// Error checking. If src == dest we would just end up loosing the linked list and some other variables.
+	// Error checking. If src == dest we would just end up loosing the linked 
+    // list and some other variables.
 	if(!src || src == dest){
 		return;
 	}
@@ -306,7 +362,6 @@ void copy_species(const SpeciesType* src, SpeciesType* dest){
 	}
 
 	/* ----------- Copy all fields ----------- */
-	dest->allow_growth = src->allow_growth;
 	dest->alpha = src->alpha;
 	dest->ann_mort_prob = src->ann_mort_prob;
 	dest->beta = src->beta;
@@ -334,14 +389,11 @@ void copy_species(const SpeciesType* src, SpeciesType* dest){
 	dest->received_prob = src->received_prob;
 	dest->relseedlingsize = src->relseedlingsize;
 	dest->res_grp = src->res_grp;
-	dest->sd_H = src->sd_H;
-	dest->sd_Param1 = src->sd_Param1;
-	dest->sd_Pmax = src->sd_Pmax;
-	dest->sd_Pmin = src->sd_Pmin;
-	dest->sd_PPTdry = src->sd_PPTdry;
-	dest->sd_PPTwet = src->sd_PPTwet;
-	dest->sd_sgerm = src->sd_sgerm;
-	dest->sd_VT = src->sd_VT;
+    dest->maxHeight = src->maxHeight;
+    dest->heightSlope = src->heightSlope;
+	dest->minReproductiveSize = src->minReproductiveSize;
+	dest->seedsPresent = src->seedsPresent;
+    dest->maxDispersalProbability = src->maxDispersalProbability;
 	dest->seedbank = src->seedbank;
 	dest->seedling_biomass = src->seedling_biomass;
 	dest->seedling_estab_prob = src->seedling_estab_prob;

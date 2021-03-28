@@ -1,16 +1,20 @@
-/********************************************************/
-/********************************************************/
-/*  Source file: ST_main.c
- *  Type: module
- *  Application: STEPPE - plant community dynamics simulator
- *  Purpose: Main program loop and initializations. */
-/*  History:
+/**
+ * \file ST_main.c
+ * \brief Main program loop and argument processing
+ * 
+ *  History:
  *     (6/15/2000) -- INITIAL CODING - cwb
  *     15-Apr-02 (cwb) -- added code to interface with SOILWAT
  *	   5-24-2013 (DLM) -- added gridded option to program... see ST_grid.c
- * source file for the rest of the gridded code */
-/********************************************************/
-/********************************************************/
+ *               source file for the rest of the gridded code 
+ * 
+ * \author CWB (initial programming)
+ * \author DLM (added gridded mode option)
+ * \author Kyle Palmquist
+ * \author Chandler Haukap
+ * \date 15 April 2000 (initial programming)
+ * \ingroup STEPPE
+ */
 
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
@@ -18,25 +22,17 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include "ST_steppe.h"
-#include "sw_src/generic.h"
 #include "sw_src/filefuncs.h"
 #include "sw_src/myMemory.h"
-#include "sw_src/SW_VegProd.h"
 #include "sw_src/SW_Control.h"
-#include "sw_src/pcg/pcg_basic.h"
-
 #include "sxw_funcs.h"
-#include "sxw.h"
 #include "sw_src/SW_Output.h"
 #include "sw_src/SW_Output_outtext.h"
 #include "sw_src/SW_Output_outarray.h"
 #include "sw_src/rands.h"
-#include "ST_stats.h"
-#include "ST_initialization.h"
+#include "ST_spinup.h"
 #include "ST_progressBar.h"
-#include "ST_seedDispersal.h"
 #include "ST_mortality.h"
 
 extern Bool prepare_IterationSummary; // defined in `SOILWAT2/SW_Output.c`
@@ -188,6 +184,7 @@ int main(int argc, char **argv) {
 	printf("STEPWAT  init_args() executed successfully \n");
 
 	if (UseGrid) {
+        writeSOILWAT2Output = prepare_IterationSummary;
 		runGrid();
 		return 0;
 	}

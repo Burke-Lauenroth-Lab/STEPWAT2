@@ -1,37 +1,32 @@
-/********************************************************/
-/*  Source file: params.c
- *  Type: module
- *  Application: STEPPE - plant community dynamics simulator
- *  Purpose: This module handles the reading and initialization
- *           of the model parameters.  Mostly these come from
- *           the *.in files, but a fair amount are computed. */
-/*  History */
-/*     (6/15/2000) -- INITIAL CODING - cwb
- *      15-Apr-02  -- added code to interface with SOILWAT (cwb)
- *                    only modified parm_Files_Init(). */
-/********************************************************/
-/********************************************************/
+/**
+ * \file ST_params.c
+ * \brief Reads and initializes the model parameters. 
+ * 
+ * Most of the parameters come from the input files and some are computed.
+ * 
+ * History
+ * (6/15/2000) -- INITIAL CODING - cwb
+ * (15-Apr-02)  -- added code to interface with SOILWAT (cwb)
+ *                 only modified parm_Files_Init().
+ * 
+ * \author CWB (initial coding)
+ * \author Chandler Haukap (author of this documentation)
+ * \date 15 April 2002
+ */
 
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <ctype.h>
 #include <errno.h>
 #include "ST_steppe.h"
-#include "sw_src/generic.h"
 #include "sw_src/filefuncs.h"
 #include "sw_src/myMemory.h"
 #include "sw_src/rands.h"
 #include "sxw_funcs.h"
-
-
-/************ External Variable Declarations ***************/
-/***********************************************************/
 #include "ST_globals.h"
 #include "sxw_vars.h"
 
@@ -971,18 +966,22 @@ static void _rgroup_addsucculent( char name[], RealF wslope, RealF wint,
    Succulent->mort[Intcpt] = dint;
 }
 
-/**************************************************************/
-/**************************************************************/
-/*****************************************************
- * The *_Species_* functions read the input from the user
- * file for species-level information.
- *
- *****************************************************/
-
+/** 
+ * \brief Read the species-specific inputs and initialize the \ref Species
+ *        array.
+ * 
+ * This function will read the species.in files and allocate enough memory
+ * for the number of species requested. It then adds the species to the
+ * \ref Species array and initializes all variables in the corresponding 
+ * \ref SpeciesType struct.
+ * 
+ * \sideeffect Memory will be allocated for multiple \ref SpeciesType structs
+ *             and the memory will be populated according to the input
+ *             parameters.
+ * 
+ * \ingroup SPECIES_PRIVATE
+ */
 static void _species_init( void) {
-/*======================================================*/
-/* Read parameters for each species
-*/
    FILE *f;
    Bool readspp = TRUE, sppok = TRUE;
 
@@ -1003,7 +1002,7 @@ static void _species_init( void) {
        viable,
        pseed;
    RealF irate, ratep, estab, minb, maxb, cohort, xdecay,
-         p1, p2, p3, p4, p5, p6, p7, p8;
+         p1, p2, p3, p4, HMAX, PMD, HSlope;
    float var;
    char clonal[5];
 
@@ -1186,9 +1185,9 @@ static void _species_init( void) {
       continue;
     }
 
-    x = sscanf( inbuf, "%s %hd %f %f %f %f %f %f %f %f",
-                name, &turnondispersal, &p1, &p2, &p3, &p4, &p5, &p6, &p7, &p8); 
-    if(x < 10) {
+    x = sscanf( inbuf, "%s %hd %f %f %f %f",
+                name, &turnondispersal, &p1, &HMAX, &PMD, &HSlope); 
+    if(x < 6) {
       LogError(logfp, LOGFATAL, "%s: Too few columns in species seed dispersal inputs", MyFileName);
     }
 
@@ -1198,17 +1197,10 @@ static void _species_init( void) {
     }
 
     Species[sp]->use_dispersal = itob(turnondispersal);
-    Species[sp]->allow_growth = TRUE;
-    Species[sp]->sd_sgerm = FALSE;
-
-    Species[sp]->sd_Param1 = p1;
-    Species[sp]->sd_PPTdry = p2;
-    Species[sp]->sd_PPTwet = p3;
-    Species[sp]->sd_Pmin = p4;
-    Species[sp]->sd_Pmax = p5;
-    Species[sp]->sd_H = p6;
-    Species[sp]->sd_VT = p7;
-    Species[sp]->sd_VW = p8;
+    Species[sp]->minReproductiveSize = p1;
+    Species[sp]->maxHeight = HMAX;
+    Species[sp]->maxDispersalProbability = PMD;
+    Species[sp]->heightSlope = HSlope;
   }
   if(!sppok) {
 	  LogError(logfp, LOGFATAL, "%s: Incorrect/incomplete input in species seed dispersal input", MyFileName);

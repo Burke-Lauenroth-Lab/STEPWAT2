@@ -1,15 +1,11 @@
-/********************************************************/
-/********************************************************/
-/*  Source file: sxw_soilwat.c
- *  Type: module
- *  Purpose: Subroutines to handle interactions with the
- *           SOILWAT model including setting up input/output
- *           files, writing to internal data structures,
- *           and actually running the model.
- *  Called by: sxw.c
- *  Application: STEPWAT - plant community dynamics simulator
- *               coupled with the  SOILWAT model. */
-/*  History:
+/**
+ * \file sxw_soilwat.c
+ * \brief Handles function calls to [SOILWAT2](\ref sw_src)
+ * 
+ * Functions in this file set up SOILWAT2 to be run inside of STEPWAT2.
+ * This means allocating memory and running SOILWAT.
+ * 
+ *  History:
  *     (14-Apr-2002) -- INITIAL CODING - cwb
  *     28-Feb-02 - cwb - The model runs but plants die
  *         soon after establishment in a way that suggests
@@ -27,7 +23,14 @@
  *                 other affected variables.  See notes in
  *                 sxw.c.
  *	08/01/2012 - DLM - updated _update_productivity() function
- *          to use the 3 different VegProds now used in soilwat */
+ *          to use the 3 different VegProds now used in soilwat 
+ * 
+ * \author CWB (initial programming)
+ * \date 14 April 2002
+ * \author DLM
+ * \date 1 August 2012
+ * \ingroup SXW_PRIVATE
+ */
 /********************************************************/
 /********************************************************/
 
@@ -35,27 +38,15 @@
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <stdio.h>
-#include "sw_src/generic.h"
 #include "sw_src/filefuncs.h"
 #include "sw_src/myMemory.h"
-#include "sw_src/Times.h"
 #include "ST_steppe.h"
 #include "ST_globals.h"
-#include "sw_src/SW_Defines.h"
-#include "sxw.h"
 #include "sxw_module.h"
-#include "sw_src/SW_Control.h"
-#include "sw_src/SW_Model.h"
-#include "sw_src/SW_Site.h"
-#include "sw_src/SW_SoilWater.h"
-#include "sw_src/SW_VegProd.h"
-#include "sw_src/SW_Files.h"
-
+#include "sxw_vars.h"
 
 /*************** Global Variable Declarations ***************/
 /***********************************************************/
-#include "sxw_vars.h"
 
 extern SW_SITE SW_Site;
 extern SW_MODEL SW_Model;

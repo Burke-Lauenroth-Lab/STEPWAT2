@@ -21,12 +21,9 @@
 /* --------------------------------------------------- */
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <math.h>
 
 #include "ST_mortality.h"
 #include "sw_src/filefuncs.h"
-#include "sw_src/generic.h"
 #include "sw_src/rands.h"
 #include "sw_src/myMemory.h"
 #include "ST_steppe.h"

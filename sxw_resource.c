@@ -1,42 +1,24 @@
-/********************************************************/
-/********************************************************/
-/*  Source file: sxw_resource.c
- *  Type: module
- *  Purpose: Compute resource vector for STEPPE based on
- *           transpiration values from SOILWAT.
- *  Dependency:  sxw.c
- *  Application: STEPWAT - plant community dynamics simulator
- *               coupled with the  SOILWAT model. */
-/*  History:
- *     (21-May-2002) -- INITIAL CODING - cwb
- *     19-Jun-2003 - cwb - Added RealD (double precision)
- *                 types for internal dynamic matrices and
- *                 other affected variables.  See notes in
- *                 sxw.c. */
-/********************************************************/
-/********************************************************/
+/**
+ * \file sxw_resource.c
+ * \brief Translates transpiration values from [SOILWAT](\ref sw_src) into 
+ *        [Steppe](\ref STEPPE) resource values.
+ * 
+ * \author CWB (initial programming)
+ * \date 21 May 2002
+ * \ingroup SXW_PRIVATE
+ */
 
 /* =================================================== */
 /*                INCLUDES / DEFINES                   */
 /* --------------------------------------------------- */
 
-#include <stdio.h>
-#include "sw_src/generic.h"
 #include "sw_src/rands.h"
 #include "sw_src/filefuncs.h"
 #include "sw_src/myMemory.h"
 #include "ST_steppe.h"
 #include "ST_globals.h"
-#include "sw_src/SW_Defines.h"
-#include "sxw.h"
 #include "sxw_module.h"
 #include "sxw_vars.h"
-#include "sw_src/SW_Control.h"
-#include "sw_src/SW_Site.h"
-#include "sw_src/SW_SoilWater.h"
-#include "sw_src/SW_VegProd.h"
-#include "sw_src/SW_Files.h"
-#include "sw_src/SW_Times.h"
 #include "sw_src/pcg/pcg_basic.h"
 
 /*************** Global Variable Declarations ***************/
